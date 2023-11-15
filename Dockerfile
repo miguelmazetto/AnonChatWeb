@@ -5,6 +5,8 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
  
 COPY . .
+RUN echo CWD: $(pwd)
+RUN ls
 RUN pnpm run prisma:generate
 RUN pnpm build
  
