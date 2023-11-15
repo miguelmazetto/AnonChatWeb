@@ -7,7 +7,8 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN echo CWD: $(pwd)
 RUN ls
-RUN pnpm run prisma:generate
+#RUN pnpm run prisma:generate
+RUN node_modules/.bin/prisma generate
 RUN pnpm build
  
 RUN rm -f /app/.env && echo "PRISMA_URL=$PRISMA_URL" > /app/.env
