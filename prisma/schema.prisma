@@ -1,0 +1,33 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+datasource db {
+    provider = "postgresql"
+    url      = env("PRISMA_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+    id          String        @id @unique
+    name        String        @default("Anônimo")
+    role        Role          @default(USER)
+    token       String        @unique
+    createdAt   DateTime      @default(now()) @db.Timestamp(6)
+    messages    Message[]
+}
+
+model Message {
+    id          String        @id @unique
+    createdAt   DateTime      @default(now()) @db.Timestamp(6)
+    updatedAt   DateTime      @updatedAt      @db.Timestamp(6)
+    senderId    String
+    sender      User          @relation(fields: [senderId], references: [id])
+    data        String
+}
