@@ -252,7 +252,7 @@
 									<p class="font-bold">{msg.sender.name}</p>
 									<small class="opacity-50">{formatDate(msg.createdAt)}</small>
 								</header>
-								<p>{@html msg.data.replaceAll('\n','<br/>')}</p>
+								<p class="whitespace-pre-wrap">{msg.data}</p>
 							</div>
 							<Avatar src="https://i.pravatar.cc/?img=48" width="w-12" />
 						</div>
