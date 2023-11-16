@@ -2,11 +2,12 @@
 	import { onMount } from 'svelte';
 	// DocShell
 	// Components
-	import { Avatar, ListBox, ListBoxItem } from '@skeletonlabs/skeleton';
+	import { Avatar, ListBox, ListBoxItem, type ModalSettings, getModalStore } from '@skeletonlabs/skeleton';
 	import UniSocketClient from '$lib/components/unisocketclient.svelte';
 	import FixDestroy from '$lib/components/fixdestroy.svelte';
 	import type { PageData } from './$types';
 	import type { addmsg_cast } from './+page.server';
+	import type { PublicUser } from '$lib/server/chat';
 	
 	export let data: PageData;
 
@@ -16,75 +17,18 @@
 
 	console.log("Data:", data)
 
-	// Types
-	interface Person {
-		id: number;
-		avatar: number;
-		name: string;
-	}
-	interface MessageFeed {
-		id: number;
-		host: boolean;
-		avatar: number;
-		name: string;
-		timestamp: string;
-		message: string;
-		color: string;
-	}
-
 	let elemChat: HTMLElement;
-	const lorem = 'Lorem';
 
 	// Navigation List
-	const people: Person[] = [
-		{ id: 0, avatar: 14, name: 'Michael' },
-		{ id: 1, avatar: 40, name: 'Janet' },
-		{ id: 2, avatar: 31, name: 'Susan' },
-		{ id: 3, avatar: 56, name: 'Joey' },
-		{ id: 4, avatar: 24, name: 'Lara' },
-		{ id: 5, avatar: 9, name: 'Melissa' }
-	];
-	let currentPerson: Person = people[0];
+	console.log("Me:", data.user, data.users)
+	data.users[data.user.id] = data.user;
+	console.log("Me:", data.users)
+	let onlineUsers: PublicUser[] = Object.values(data.users);
+	console.log(onlineUsers)
+
+	let currentUser: PublicUser = data.users[data.user.id];
 
 	// Messages
-	let messageFeed: MessageFeed[] = [
-		{
-			id: 0,
-			host: true,
-			avatar: 48,
-			name: 'Jane',
-			timestamp: 'Yesterday @ 2:30pm',
-			message: lorem,
-			color: 'variant-soft-primary'
-		},
-		{
-			id: 1,
-			host: false,
-			avatar: 14,
-			name: 'Michael',
-			timestamp: 'Yesterday @ 2:45pm',
-			message: lorem,
-			color: 'variant-soft-primary'
-		},
-		{
-			id: 2,
-			host: true,
-			avatar: 48,
-			name: 'Jane',
-			timestamp: 'Yesterday @ 2:50pm',
-			message: lorem,
-			color: 'variant-soft-primary'
-		},
-		{
-			id: 3,
-			host: false,
-			avatar: 14,
-			name: 'Michael',
-			timestamp: 'Yesterday @ 2:52pm',
-			message: lorem,
-			color: 'variant-soft-primary'
-		}
-	];
 	let currentMessage = '';
 
 	let cursending = 0;
@@ -105,12 +49,25 @@
 		elemChat.scrollTo({ top: elemChat.scrollHeight, behavior });
 	}
 
-	function getCurrentTimestamp(): string {
-		return new Date().toLocaleString('pt-BR', { hour: 'numeric', minute: 'numeric', hour12: true });
-	}
-
 	async function sleep(ms: number){
 		return new Promise(resolve => setTimeout(resolve, ms))
+	}
+
+	async function postmessage(path: string, body: string){
+		while(true){
+			try {
+				const ret = await fetch(path, {
+					method: 'POST',
+					body: body
+				})
+				if(ret.ok)
+					break;
+				else
+					await sleep(1000);
+			} catch (e) {
+				await sleep(500)
+			}
+		}
 	}
 
 	async function addMessage() {
@@ -140,20 +97,7 @@
 		const sentid = cursending
 		cursending++;
 
-		while(true){
-			try {
-				const ret = await fetch("?/sendmessage", {
-					method: 'POST',
-					body: JSON.stringify([sentid, message2send])
-				})
-				if(ret.ok)
-					break;
-				else
-					await sleep(1000);
-			} catch (e) {
-				await sleep(500)
-			}
-		}
+		await postmessage("?/sendmessage", JSON.stringify([sentid, message2send]))
 		
 		for (let i = 0; i < msgBuf.length; i++) {
 			const e = msgBuf[i];
@@ -196,21 +140,31 @@
             case 'addmsg':
 				receivedMessage(msg.data)
                 break;
-            //case 'update':
-            //    let obj : Record<string, any>, gothrough : boolean;
-            //    rows.update((a) => (
-            //        index = a.findIndex(v => v.sessionId === msg.sessionId),
-            //        gothrough = index > -1,
-            //        gothrough && (obj = a[a.findIndex(v => v.sessionId === msg.sessionId)]),
-            //        gothrough && Object.keys(msg.data).forEach(k => obj[k] = msg.data[k]),
-            //        a))
-            //    break;
-            //case 'remove':
-            //    rows.update((a) => (
-            //        index = a.findIndex(v => v.sessionId === msg.sessionId),
-            //        index > -1 && a.splice(index, 1),
-            //        a))
-            //    break;
+			case 'onuser':
+				onlineUsers.push(msg.data)
+				onlineUsers = onlineUsers
+				break;
+			case 'offuser':
+				for (let i = 0; i < onlineUsers.length; i++) {
+					const e = onlineUsers[i];
+					if(e.id === msg.data){
+						onlineUsers.splice(i, 1);
+						onlineUsers = onlineUsers;
+						break;
+					}
+				}
+				break;
+			case 'chname':
+				for (let i = 0; i < onlineUsers.length; i++) {
+					const e = onlineUsers[i];
+					if(e.id === msg.data.id){
+						e.name = msg.data.name;
+						onlineUsers = onlineUsers;
+						break;
+					}
+				}
+				msgBuf.forEach(m => m.sender.id === msg.data.id ? m.sender.name = msg.data.name : 0)
+				break;
         }
 	}
 	function padzero(s: string|number, n: number = 2){
@@ -223,13 +177,26 @@
 		const mm = now.getMonth() === date.getMonth()
 		const md = now.getDate() === date.getDate()
 
+		const diassemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
 		if(my && mm && md)
 			return `${padzero(date.getHours())}:${padzero(date.getMinutes())}`
 		else if(my && mm)
-			return  `${date.getDay()} ${date.getDate()}, ${padzero(date.getHours())}:${padzero(date.getMinutes())}`
+			return  `${diassemana[date.getDay()]} ${date.getDate()}, ${padzero(date.getHours())}:${padzero(date.getMinutes())}`
 		else
 			return date.toLocaleTimeString()
 	}
+	const modalStore = getModalStore();
+	let changeNameModal: ModalSettings = {
+		type: 'prompt',
+		title: 'Trocar nome',
+		body: 'Insira o novo nome abaixo',
+		value: data.user.name,
+		valueAttr: { type: 'text', minlength: 3, maxlength: 36, required: true },
+		response: async (r: string) => {
+			await postmessage("?/changename", JSON.stringify({name: r}))
+		},
+	};
 </script>
 <FixDestroy><UniSocketClient src={"/chat?from="+lastMessageReceivedDate.getUTCMilliseconds()} onMessage={handleMessage}/></FixDestroy>
 <section class="card h-full">
@@ -241,12 +208,17 @@
 				<small class="opacity-50">Usuários Online</small>
 				<div class="overflow-y-auto">
 					<ListBox active="variant-filled-primary">
-						{#each people as person}
-							<ListBoxItem bind:group={currentPerson} name="people" value={person}>
+						{#each onlineUsers as user}
+							<ListBoxItem bind:group={currentUser} name="people" value={user}>
 								<svelte:fragment slot="lead">
-									<Avatar src="https://i.pravatar.cc/?img={person.avatar}" width="w-8" />
+									<Avatar src="https://i.pravatar.cc/?img=48" width="w-8" />
 								</svelte:fragment>
-								{person.name}
+								{user ? user.name : 'undefined'}
+								<svelte:fragment slot="trail">
+									{#if user.id === data.user.id}
+									Eu
+									{/if}
+								</svelte:fragment>
 							</ListBoxItem>
 						{/each}
 					</ListBox>
@@ -254,7 +226,7 @@
 			</div>
 			<!-- Footer -->
 			<footer class="border-t border-surface-500/30 p-4">
-				<button class="btn variant-filled">Trocar nome...</button>
+				<button class="btn variant-filled" on:click={() => modalStore.trigger(changeNameModal)}>Trocar nome...</button>
 			</footer>
 		</div>
 		<!-- Chat -->

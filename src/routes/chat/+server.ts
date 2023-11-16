@@ -1,10 +1,11 @@
 //import { load } from '../../+layout.server'
 import prisma from '$lib/config/prisma'
 import { UniSocketServer } from '$lib/server/unisocketserver';
-import { getLastMessages, getNextMessages } from '$lib/server/chat';
+import { getLastMessages, getNextMessages, type PublicUser } from '$lib/server/chat';
 import type { Locals } from '../../hooks.server.js';
 
-export const _sockets: (UniSocketServer | undefined)[] = []; // @hmr:keep
+type OnlineSocket = { id?: string, name?: string, createdAt?: Date } & UniSocketServer;
+export const _sockets: (OnlineSocket | undefined)[] = []; // @hmr:keep
 
 // Broadcast to all sockets
 export async function _broadcast(msg: Record<string, any>){
@@ -17,7 +18,7 @@ export async function _broadcast(msg: Record<string, any>){
     console.log("Socket", i, socket)
     if(socket)
       try{
-        await socket.sendMessage(msgstr)
+        socket.sendMessage(msgstr)
       }catch(e){/* Nothing */}
   }
 
@@ -25,6 +26,8 @@ export async function _broadcast(msg: Record<string, any>){
   while(_sockets.length > 0 && _sockets[_sockets.length - 1] === undefined)
     _sockets.pop()
 }
+
+export let _onlineUsers: Record<string, PublicUser> = {}
 
 export async function GET(event) {
   const url = event.url
@@ -34,7 +37,19 @@ export async function GET(event) {
   // load({ locals: { user } })
 
   console.log("msg/update start");
-  const socket = new UniSocketServer()
+  const socket: OnlineSocket = new UniSocketServer()
+  const userid = locals.user.id
+
+  _onlineUsers[userid] = {
+    name:      locals.user.name,
+    id:        userid,
+    createdAt: locals.user.createdAt
+  }
+
+  await _broadcast({
+    action: 'onuser',
+    data: _onlineUsers[userid]
+  });
 
   // find first unused id and set it to our socket
   let id = 0;
@@ -45,6 +60,10 @@ export async function GET(event) {
 
   socket.onCancel = () => {
     console.log("msg/update cancel");
+    _broadcast({
+      action: 'offuser',
+      data: userid
+    });
     _sockets[id] = undefined
   }
 

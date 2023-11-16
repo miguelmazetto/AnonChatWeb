@@ -1,6 +1,12 @@
 import prisma from "$lib/config/prisma";
 import type { User } from "@prisma/client"
 
+export type PublicUser = {
+    id: string,
+    name: string,
+    createdAt: Date
+}
+
 export async function getLastMessages(){
     return (await prisma.message.findMany({
         orderBy: [{ createdAt: 'desc' }],
