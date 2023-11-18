@@ -1,0 +1,5 @@
+**/node_modules
+.env
+.env.*
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*

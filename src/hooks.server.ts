@@ -35,7 +35,7 @@ export const handleError: HandleServerError = async ({ error, event }) => {
 
 export type Locals = App.Locals & {
 	startTimer: number,
-	usertoken: string,
+	usertoken?: string,
 	user: {
 		id: string;
 		name: string;
@@ -59,27 +59,29 @@ export const handle: Handle = async ({ event, resolve }) => {
 	locals.startTimer = startTimer;
     locals.usertoken = event.cookies.get('guesttoken')
 
-    if(locals.usertoken === undefined || locals.usertoken === ''){
-        locals.usertoken = randHex();
-        event.cookies.set('guesttoken', locals.usertoken);
-        locals.user = await prisma.user.create({
-            data: {
-				id: randHex(),
-            	token: locals.usertoken
+	while(true){
+		if(locals.usertoken === undefined || locals.usertoken === ''){
+			locals.usertoken = randHex();
+			event.cookies.set('guesttoken', locals.usertoken);
+			locals.user = await prisma.user.create({
+				data: {
+					id: randHex(),
+					token: locals.usertoken
+				}
+			});
+			break;
+		}else{
+			let user = await prisma.user.findUnique({ where: { token: locals.usertoken } });
+			console.log(user, locals.usertoken)
+			if(user === null || user === undefined){
+				locals.usertoken = undefined;
+				continue;
+			}else{
+				locals.user = user;
+				break;
 			}
-        });
-    }else{
-        let user = await prisma.user.findUnique({ where: { token: locals.usertoken } });
-		console.log(user, locals.usertoken)
-        if(user === null || user === undefined){
-            const response = new Response("Unknown User");
-            log(response.status, event);
-            event.cookies.set('guesttoken', '')
-            return response;
-        }else{
-			locals.user = user;
 		}
-    }
+	}
 
 	console.log("Locals:", locals)
 

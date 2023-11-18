@@ -1,14 +1,13 @@
 FROM guergeiro/pnpm:18-8
- 
+
 WORKDIR /app
-COPY package.json ./
-RUN pnpm install
+COPY package.json tsconfig.json pnpm-lock.yaml ./
+COPY ./prisma ./prisma
+RUN pnpm install --frozen-lockfile
  
 COPY . .
 RUN pnpm run prisma:generate
 RUN pnpm build
- 
-RUN rm -f /app/.env && echo "PRISMA_URL=$PRISMA_URL" > /app/.env
 
 EXPOSE 3000
-CMD ["node", "build"]
+CMD pnpm run prisma:dbpush;node build

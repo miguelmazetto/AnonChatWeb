@@ -11,7 +11,8 @@
     "lint": "prettier --plugin-search-dir . --check . && eslint .",
     "format": "prettier --plugin-search-dir . --write .",
     "start": "node build",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "prisma:dbpush": "prisma db push"
   },
   "devDependencies": {
     "@skeletonlabs/skeleton": "2.5.0",

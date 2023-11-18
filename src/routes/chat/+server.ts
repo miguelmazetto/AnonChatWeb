@@ -60,11 +60,12 @@ export async function GET(event) {
 
   socket.onCancel = () => {
     console.log("msg/update cancel");
+    _onlineUsers[userid] ? (delete _onlineUsers[userid]) : 0;
+    _sockets[id] = undefined
     _broadcast({
       action: 'offuser',
       data: userid
     });
-    _sockets[id] = undefined
   }
 
   // Send initial message

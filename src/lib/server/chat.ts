@@ -15,6 +15,13 @@ export async function getLastMessages(){
     })).reverse();
 }
 
+export async function getAllMessages(){
+    return await prisma.message.findMany({
+        orderBy: [{ createdAt: 'asc' }],
+        include: { sender: { select: {id: true, name: true}} }
+    });
+}
+
 export async function getNextMessages(lasttime: Date){
     return (await prisma.message.findMany({
         orderBy: [{ createdAt: 'desc' }],

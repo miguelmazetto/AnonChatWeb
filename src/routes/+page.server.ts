@@ -1,6 +1,6 @@
 import prisma from "$lib/config/prisma";
-import { getLastMessages, type PublicUser } from "$lib/server/chat";
-import { randHex, type Locals, type MyEvent } from "../hooks.server";
+import { getAllMessages } from "$lib/server/chat";
+import { randHex, type MyEvent } from "../hooks.server";
 import { _broadcast, _onlineUsers, _sockets } from "./chat/+server";
 
 export type addmsg_cast = {
@@ -16,7 +16,7 @@ export type addmsg_cast = {
 export const load = async (event: MyEvent) => {
 	return {
 		user: event.locals.user,
-		messages: await getLastMessages(),
+		messages: await getAllMessages(),
         users: _onlineUsers
 	};
 };

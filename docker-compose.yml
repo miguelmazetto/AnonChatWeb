@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres-anonchat:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Bx2NFMtTnR35AzXK4sZbPw
+      POSTGRES_DB: anonchat
+
+  server-anonchat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      PRISMA_URL: postgres://postgres:Bx2NFMtTnR35AzXK4sZbPw@postgres-anonchat:5432/anonchat
+      ORIGIN: http://localhost:3000
+    links:
+      - postgres-anonchat
+    depends_on:
+      - postgres-anonchat
