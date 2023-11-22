@@ -5,7 +5,8 @@
 	import FixDestroy from '$lib/components/fixdestroy.svelte';
 	import type { PageData } from './$types';
 	import type { addmsg_cast } from './+page.server';
-	import type { PublicUser } from '$lib/server/chat';
+	import { loggedUser, onlineUsers, postmessage, type PublicUser } from '$lib/client/chat';
+	import Navigation from '$lib/components/navigation.svelte';
 	
 	/**
 	 * Dados embutidos pelo load (Server-Side Rendering)
@@ -25,8 +26,6 @@
 	// Elemento que deve ser scrollado do chat
 	let elemChat: HTMLElement;
 
-	console.log("Me:", data.user, data.users)
-
 	/**
 	 * Insere o usuario logado na lista de usuarios online
 	 */
@@ -35,18 +34,14 @@
 	/**
 	 * Array de usuarios online, inicializado pelos dados do load
 	 */
-	let onlineUsers: PublicUser[] = Object.values(data.users);
+	$onlineUsers = Object.values(data.users);
+	$loggedUser = data.user;
 
-	console.log(onlineUsers)
-
-	// Usuario selecionado na navegacao
-	let currentUser: PublicUser = data.users[data.user.id];
+	console.log($onlineUsers)
 
 	// Conteudo da entrada de texto do chat
 	let currentMessage = '';
-
 	let cursending = 0;
-
 	type ClMessage = Message & {
 		sendingId?: number
 	}
@@ -64,47 +59,6 @@
 	// eslint-disable-next-line no-undef
 	function scrollChatBottom(behavior?: ScrollBehavior): void {
 		elemChat.scrollTo({ top: elemChat.scrollHeight, behavior });
-	}
-
-	/**
-	 * Sleep em forma de async function
-	 * @param ms
-	 */
-	async function sleep(ms: number){
-		return new Promise(resolve => setTimeout(resolve, ms))
-	}
-
-	/**
-	 * Envia mensagem post para path com o body
-	 * Se falhar com throw error, ele retentara em 500ms
-	 * Se falhar com HTTP error, retentara em 1000ms
-	 * Se falhar com HTTP error mais que 5 vezes,
-	 * 	esperara mais 5000ms para voltar a retentar.
-	 * @param path
-	 * @param body
-	 */
-	async function postmessage(path: string, body: string){
-		let tries = 0;
-		while(true){
-			try {
-				const ret = await fetch(path, {
-					method: 'POST',
-					body: body
-				})
-				if(ret.ok)
-					break;
-				else
-					await sleep(1000);
-			} catch (e) {
-				await sleep(500)
-			} finally {
-				tries++;
-				if(tries > 5){
-					await sleep(5000);
-					tries = 0;
-				}
-			}
-		}
 	}
 
 	/**
@@ -208,38 +162,43 @@
 			 * Um usuario ficou online
 			*/
 			case 'onuser':
-				onlineUsers.push(msg.data)
-				onlineUsers = onlineUsers
+				onlineUsers.update(a => (a.push(msg.data), a))
 				break;
 
 			/**
 			 * Um usuario ficou offline
 			*/
 			case 'offuser':
-				for (let i = 0; i < onlineUsers.length; i++) {
-					const e = onlineUsers[i];
-					if(e.id === msg.data){
-						onlineUsers.splice(i, 1);
-						onlineUsers = onlineUsers;
-						break;
+				onlineUsers.update(a => {
+					for (let i = 0; i < a.length; i++) {
+						const e = a[i];
+						if(e.id === msg.data){
+							a.splice(i, 1);
+							break;
+						}
 					}
-				}
+					return a;
+				})
 				break;
 
 			/**
 			 * Um usuario mudou o nome
 			*/
 			case 'chname':
-				for (let i = 0; i < onlineUsers.length; i++) {
-					const e = onlineUsers[i];
-					if(e.id === msg.data.id){
-						e.name = msg.data.name;
-						onlineUsers = onlineUsers;
-						break;
+				onlineUsers.update(a => {
+					for (let i = 0; i < a.length; i++) {
+						const e = a[i];
+						if(e.id === msg.data.id){
+							console.log("Found target:", e)
+							e.name = msg.data.name;
+							break;
+						}
 					}
-				}
+					return a;
+				})
 				msgBuf.forEach(m =>
 					m.sender.id === msg.data.id ? m.sender.name = msg.data.name : 0)
+				msgBuf = msgBuf;
 				break;
         }
 	}
@@ -274,63 +233,13 @@
 			return date.toLocaleTimeString()
 	}
 
-	/**
-	 * Configuracao do popup de trocar nome
-	 */
-	const modalStore = getModalStore();
-	let changeNameModal: ModalSettings = {
-		type: 'prompt',
-		title: 'Trocar nome',
-		body: 'Insira o novo nome abaixo',
-		value: data.user.name,
-		valueAttr: { type: 'text', minlength: 3, maxlength: 36, required: true },
-		response: async (r: string) => {
-			await postmessage("?/changename", JSON.stringify({name: r}))
-		},
-	};
-
 </script>
 <FixDestroy><UniSocketClient src={"/chat?from="+lastMessageReceivedDate.getUTCMilliseconds()} onMessage={handleMessage}/></FixDestroy>
 
 <div class='chat w-full h-full grid grid-cols-1= lg:grid-cols-[300px_1fr] grid-rows-[1fh_100px]'>
 
-	<!-- Navigation -->
-	<div class="hidden lg:grid grid-rows-[auto_1fr_auto] border-r border-surface-500/30"  style='height: calc(100vh - 150px)'>
-
-		<!-- Usuarios Online -->
-		<div class="p-4 space-y-4 overflow-y-auto">
-
-			<small class="opacity-50">Usuários Online</small>
-			
-			<div class="overflow-y-auto">
-				<ListBox active="variant-filled-primary">
-					{#each onlineUsers as user} <!-- Para cada usuario online -->
-						<ListBoxItem bind:group={currentUser} name="people" value={user}>
-
-							<!-- Avatar do usuario -->
-							<svelte:fragment slot="lead">
-								<Avatar src="https://i.pravatar.cc/?img=48" width="w-8" />
-							</svelte:fragment>
-
-							<!-- Nome do usuario -->
-							{user ? user.name : 'undefined'}
-
-							<!-- Indicador de "Eu" -->
-							<svelte:fragment slot="trail">
-								{#if user.id === data.user.id}
-								Eu
-								{/if}
-							</svelte:fragment>
-						</ListBoxItem>
-					{/each}
-				</ListBox>
-			</div>
-		</div>
-
-		<!-- Parte debaixo do Navigation (parte dos botoes Trocar Usuario) -->
-		<footer class="border-t border-surface-500/30 p-4">
-			<button class="btn variant-filled" on:click={() => modalStore.trigger(changeNameModal)}>Trocar nome...</button>
-		</footer>
+	<div class='hidden lg:grid'>
+		<Navigation />
 	</div>
 
 	<!-- Chat -->

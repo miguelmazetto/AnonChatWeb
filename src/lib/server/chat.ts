@@ -39,7 +39,7 @@ export async function getNextMessages(lasttime: Date){
     return (await prisma.message.findMany({
         orderBy: [{ createdAt: 'desc' }],
         take: 100,
-        where: { createdAt: { lt: lasttime } },
+        where: { createdAt: { lt: lasttime.toISOString() } },
         include: { sender: { select: {id: true, name: true}} }
     })).reverse();
 }
@@ -50,7 +50,7 @@ export async function getNextMessages(lasttime: Date){
 export async function getMissedMessages(lasttime: Date){
     return (await prisma.message.findMany({
         orderBy: [{ createdAt: 'asc' }],
-        where: { createdAt: { gt: lasttime } },
+        where: { createdAt: { gt: lasttime.toISOString() } },
         include: { sender: { select: {id: true, name: true}} }
     }));
 }
