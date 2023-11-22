@@ -60,7 +60,7 @@
 
 				let msgbuf: Uint8Array[] = [];
 
-				onNavigate(() => {running = false});
+				//onNavigate(() => {running = false});
 
 				while(running){
 					let chunk = await reader.read()
