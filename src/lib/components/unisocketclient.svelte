@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
+	import { onNavigate } from '$app/navigation';
 
     // Props
     export let src : string | undefined
@@ -59,14 +60,25 @@
 
 				let msgbuf: Uint8Array[] = [];
 
+				onNavigate(() => {running = false});
+
 				while(running){
 					let chunk = await reader.read()
 					if(chunk.value === undefined) break;
 
-					let iof_zero: number
+					/*
+						[8000bytes]
+						[1400bytes][1400bytes][1400bytes][1400bytes]...
+						{        }
+						[700bytes]
+								 [700bytes][1400bytes][1400bytes][1400bytes]
+					*/
+					let iof_zero: number			  //'\0'
 					while((iof_zero = chunk.value.indexOf(0)) != -1){
-						let msg_arr = chunk.value.subarray(0, iof_zero)
-						chunk.value = chunk.value.subarray(iof_zero+1)
+						// Processando jsons do chunk atual
+
+						let msg_arr = chunk.value.subarray(0, iof_zero) // Pegar JSON
+						chunk.value = chunk.value.subarray(iof_zero+1)  // Deixar o resto chunk
 
 						msgbuf.push(msg_arr)
 						//handleMessageArr(concatU8Arr(msgbuf))

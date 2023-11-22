@@ -1,12 +1,19 @@
 import prisma from "$lib/config/prisma";
 import type { User } from "@prisma/client"
 
+/**
+ * Informações do usuário que são publicas,
+ * expostas para qualquer outro usuário
+ */
 export type PublicUser = {
     id: string,
     name: string,
     createdAt: Date
 }
 
+/**
+ * Obter as ultimas 100 mensagens de chat do banco
+ */
 export async function getLastMessages(){
     return (await prisma.message.findMany({
         orderBy: [{ createdAt: 'desc' }],
@@ -15,6 +22,9 @@ export async function getLastMessages(){
     })).reverse();
 }
 
+/**
+ * Obter todas as mensagens de chat do banco
+ */
 export async function getAllMessages(){
     return await prisma.message.findMany({
         orderBy: [{ createdAt: 'asc' }],
@@ -22,6 +32,9 @@ export async function getAllMessages(){
     });
 }
 
+/**
+ * Obter as próximas 100 mensagens de chat do banco após lasttime
+ */
 export async function getNextMessages(lasttime: Date){
     return (await prisma.message.findMany({
         orderBy: [{ createdAt: 'desc' }],
@@ -31,6 +44,9 @@ export async function getNextMessages(lasttime: Date){
     })).reverse();
 }
 
+/**
+ * Mesmo que anterior (só que não funciona)
+ */
 export async function getMissedMessages(lasttime: Date){
     return (await prisma.message.findMany({
         orderBy: [{ createdAt: 'asc' }],

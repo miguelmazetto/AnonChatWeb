@@ -45,8 +45,8 @@ export type Locals = App.Locals & {
 	}
 };
 
-export function randHex(){
-	return randomBytes(16).toString('hex')
+export function randHex(bytes = 16){
+	return randomBytes(bytes).toString('hex')
 }
 
 export type MyEvent = RequestEvent<Partial<Record<string, string>>, string | null> & {
@@ -66,6 +66,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			locals.user = await prisma.user.create({
 				data: {
 					id: randHex(),
+					name: `Anon_${randHex(4)}`,
 					token: locals.usertoken
 				}
 			});

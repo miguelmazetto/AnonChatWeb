@@ -1,7 +1,7 @@
 import prisma from "$lib/config/prisma";
 import { getAllMessages } from "$lib/server/chat";
 import { randHex, type MyEvent } from "../hooks.server";
-import { _broadcast, _onlineUsers, _sockets } from "./chat/+server";
+import { _broadcast, _onlineUsers } from "./chat/+server";
 
 export type addmsg_cast = {
     id: string,

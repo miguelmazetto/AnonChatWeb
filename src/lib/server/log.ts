@@ -3,6 +3,14 @@ import parseTrack from '$lib/_helpers/parseTrack';
 import parseMessage from '$lib/_helpers/parseMessage';
 import { DOMAIN } from '$lib/config/constants';
 
+/**
+ * Log genérico
+ * Modificado a partir de:
+ * https://github.com/delay/sveltekit-auth-starter/blob/main/src/lib/server/log.ts
+ * @param statusCode 
+ * @param event 
+ */
+
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 //@ts-ignore
 export default async function log(statusCode: number, event) {

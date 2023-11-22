@@ -2,33 +2,48 @@
 import prisma from '$lib/config/prisma'
 import { UniSocketServer } from '$lib/server/unisocketserver';
 import { getLastMessages, getNextMessages, type PublicUser } from '$lib/server/chat';
-import type { Locals } from '../../hooks.server.js';
+import { randHex, type Locals } from '../../hooks.server.js';
 
-type OnlineSocket = { id?: string, name?: string, createdAt?: Date } & UniSocketServer;
-export const _sockets: (OnlineSocket | undefined)[] = []; // @hmr:keep
+type OnlineSocket = { socketid?: string } & UniSocketServer;
 
-// Broadcast to all sockets
+/**
+ * _sockets = {
+ *    [userid]: [
+ *        OnlineSocketFromTab1,
+ *        OnlineSocketFromTab2
+ *    ]
+ * }
+ */
+export const _sockets: Record<string, OnlineSocket[]> = {}; // @hmr:keep
+
+/**
+ * Broadcast para todos os sockets conectados
+ * @param msg 
+ */
 export async function _broadcast(msg: Record<string, any>){
   const msgstr = JSON.stringify(msg)
   console.log("_broadcast", msg)
   console.log("_sockets", _sockets)
 
-  for (let i = 0; i < _sockets.length; i++) {
-    const socket = _sockets[i];
-    console.log("Socket", i, socket)
-    if(socket)
-      try{
-        socket.sendMessage(msgstr)
-      }catch(e){/* Nothing */}
+  for (const key in _sockets) {
+    for (let i = 0; i < _sockets[key].length; i++) {
+      const socket = _sockets[key][i];
+      console.log("Socket", key, i, socket)
+      if(socket)
+        try{
+          socket.sendMessage(msgstr)
+        }catch(e){/* Nothing */}
+    }
   }
-
-  // Remove unused last indexes
-  while(_sockets.length > 0 && _sockets[_sockets.length - 1] === undefined)
-    _sockets.pop()
 }
 
 export let _onlineUsers: Record<string, PublicUser> = {}
 
+/**
+ * Lida com todos os requests GET feito para o caminho '/chat' localhost:3000/chat
+ * @param event 
+ * @returns 
+ */
 export async function GET(event) {
   const url = event.url
   const locals = event.locals as Locals
@@ -38,9 +53,10 @@ export async function GET(event) {
 
   console.log("msg/update start");
   const socket: OnlineSocket = new UniSocketServer()
+  const socketid = socket.socketid = randHex();
   const userid = locals.user.id
 
-  _onlineUsers[userid] = {
+  _onlineUsers[userid] = _onlineUsers[userid] ?? {
     name:      locals.user.name,
     id:        userid,
     createdAt: locals.user.createdAt
@@ -51,21 +67,27 @@ export async function GET(event) {
     data: _onlineUsers[userid]
   });
 
-  // find first unused id and set it to our socket
-  let id = 0;
-  for (; id <= _sockets.length; id++)
-    if(_sockets[id] === undefined) break;
-
-  _sockets[id] = socket
+  _sockets[userid] = _sockets[userid] ?? []
+  _sockets[userid].push(socket)
 
   socket.onCancel = () => {
     console.log("msg/update cancel");
-    _onlineUsers[userid] ? (delete _onlineUsers[userid]) : 0;
-    _sockets[id] = undefined
-    _broadcast({
-      action: 'offuser',
-      data: userid
-    });
+
+    // Remove socket from list
+    for (let i = 0; i < _sockets[userid].length; i++) {
+      const cursocket = _sockets[userid][i];
+      if(cursocket.socketid === socketid)
+        _sockets[userid].splice(i,1);
+    }
+
+    // If no sockets are online, then user is offline
+    if(_sockets[userid].length == 0){
+      delete _onlineUsers[userid];
+      _broadcast({
+        action: 'offuser',
+        data: userid
+      });
+    }
   }
 
   // Send initial message
@@ -78,9 +100,10 @@ export async function GET(event) {
     }
 
     socket.sendMessage(JSON.stringify(send))
-  }else{
+
+  }else{ // V Sempre usado esse V
+
     let date = new Date(url.searchParams.get('from') ?? '')
-    //date.setUTCMilliseconds(parseInt(url.searchParams.get('from') ?? '0'))
     console.log(url.searchParams.get('from'), date)
     const send = {
       action: 'from',
@@ -90,6 +113,10 @@ export async function GET(event) {
     socket.sendMessage(JSON.stringify(send))
   }
 
+  /**
+   * Retornando a stream do UniSocketServer faz
+   * com que a stream seja linkada ao request
+   */
 	return new Response(socket.stream, {
         headers: {
             'content-type': 'text/event-stream',
