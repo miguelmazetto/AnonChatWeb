@@ -29,12 +29,14 @@
     let retrying = false; // @hmr:keep
 
 	async function tryGet(){
+
 		//curreader = curreader ?? usc[src ?? '']
         if(src === undefined) return
 		if((curreader && !curreader.closed ) || retrying) return;
 		//usc[src ?? ''] = curreader
 
 		markdestroy = false
+		retrying = true
 
 		while(document.cookie.indexOf('guesttoken') === -1)
 			await sleep(100);
@@ -43,7 +45,7 @@
 		// if(usc[src ?? '']) usc[src ?? '']()
 		// usc[src ?? ''] = doDestroy;
 
-        retrying = true
+
 		fetch(src)
 			.then((response) => response.body)
 			.then(async (body) => {
