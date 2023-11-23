@@ -15,7 +15,13 @@ export type addmsg_cast = {
 
 export const load = async (event: MyEvent) => {
 	return {
-		user: event.locals.user,
+		user: event.locals.user ?? {
+            id: 'undefined',
+            name: 'undefined',
+            role: 'USER',
+            token: 'undefined',
+            createdAt: new Date(Date.now())
+        },
 		messages: await getAllMessages(),
         users: _onlineUsers
 	};
