@@ -23,12 +23,11 @@ export const _sockets: Record<string, OnlineSocket[]> = {}; // @hmr:keep
 export async function _broadcast(msg: Record<string, any>){
   const msgstr = JSON.stringify(msg)
   console.log("_broadcast", msg)
-  console.log("_sockets", _sockets)
+  //console.log("_sockets", _sockets)
 
   for (const key in _sockets) {
     for (let i = 0; i < _sockets[key].length; i++) {
       const socket = _sockets[key][i];
-      console.log("Socket", key, i, socket)
       if(socket)
         try{
           socket.sendMessage(msgstr)
@@ -51,7 +50,9 @@ export async function GET(event) {
   // Apply admin-only
   // load({ locals: { user } })
 
-  console.log("msg/update start");
+  const ip = event.getClientAddress();
+
+  console.log("msg/update start:", ip);
   const socket: OnlineSocket = new UniSocketServer()
   const socketid = socket.socketid = randHex();
   const userid = locals.user.id
@@ -71,7 +72,7 @@ export async function GET(event) {
   _sockets[userid].push(socket)
 
   socket.onCancel = () => {
-    console.log("msg/update cancel");
+    console.log("msg/update cancel:", ip);
 
     // Remove socket from list
     for (let i = 0; i < _sockets[userid].length; i++) {
@@ -104,7 +105,6 @@ export async function GET(event) {
   }else{ // V Sempre usado esse V
 
     let date = new Date(url.searchParams.get('from') ?? '')
-    console.log(url.searchParams.get('from'), date)
     const send = {
       action: 'from',
       data: await getNextMessages(date),
