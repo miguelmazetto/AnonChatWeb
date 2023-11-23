@@ -69,4 +69,27 @@ export const actions = {
         }
         return 'done'
     },
+    debug: async (evt) => {
+        const event = evt as MyEvent;
+        console.log("Received Debug:", await event.request.text())
+        return ''
+    },
+    validateuser: async (evt) => {
+        const event = evt as MyEvent;
+        let tok = await event.request.text()
+        if(tok === '' || tok === 'undefined'){
+            const usertoken = randHex();
+			return await prisma.user.create({
+				data: {
+					id: randHex(),
+					name: `Anon_${randHex(4)}`,
+					token: usertoken
+				}
+			});
+        }else{
+            return await prisma.user.findUnique({
+				where: { token: tok }
+			});
+        }
+    }
 }

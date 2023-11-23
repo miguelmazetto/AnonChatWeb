@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { writable } from "svelte/store";
 
 /**
@@ -25,9 +26,11 @@ export async function postmessage(path: string, body: string){
 				method: 'POST',
 				body: body
 			})
-			if(ret.ok)
-				break;
-			else
+			if(ret.ok){
+				let r: string = '';
+				try{r = await ret.text()}catch(e){}
+				return r;
+			}else
 				await sleep(1000);
 		} catch (e) {
 			await sleep(500)
@@ -52,4 +55,6 @@ export type PublicUser = {
  */
 export let onlineUsers = writable<PublicUser[]>();
 
-export let loggedUser = writable<PublicUser>();;
+export let loggedUser = writable<PublicUser>();
+
+export let allowSocket = writable(!Capacitor.isNativePlatform());

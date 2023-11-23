@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Avatar, ListBox, ListBoxItem, type ModalSettings, getModalStore } from '@skeletonlabs/skeleton';
+	import { Avatar } from '@skeletonlabs/skeleton';
 	import UniSocketClient from '$lib/components/unisocketclient.svelte';
 	import FixDestroy from '$lib/components/fixdestroy.svelte';
 	import type { PageData } from './$types';
 	import type { addmsg_cast } from './+page.server';
-	import { loggedUser, onlineUsers, postmessage, type PublicUser } from '$lib/client/chat';
+	import { allowSocket, loggedUser, onlineUsers, postmessage } from '$lib/client/chat';
 	import Navigation from '$lib/components/navigation.svelte';
 	
 	import { Capacitor, CapacitorCookies } from '@capacitor/core'
@@ -19,14 +19,34 @@
 					key: 'guesttoken',
 					value: saved
 				})
-				window.location.href = window.location.href;
+
+				let valid = (await postmessage('?/validateuser', saved));
+				let validjson = JSON.parse(JSON.parse(valid).data);
+				['id','createdAt','name','role','token'].map((k,i) => {
+					// @ts-ignore
+					data.user[k] = validjson[validjson[0][k]]
+				})
+
+				loggedUser.update(u => data.user);
+				data.users[data.user.id] = data.user;
+				onlineUsers.update(users => users.map(u => u.id === 'undefined' ? data.user : u))
 			}else{
 				if(document.cookie.indexOf('guesttoken') === -1){
-					await CapacitorCookies.setCookie({
-						key: 'newuser',
-						value: 'true'
+					let valid = (await postmessage('?/validateuser', ''));
+					let validjson = JSON.parse(JSON.parse(valid).data);
+					['id','createdAt','name','role','token'].map((k,i) => {
+						// @ts-ignore
+						data.user[k] = validjson[validjson[0][k]]
 					})
-					window.location.href = window.location.href;
+					CapacitorCookies.setCookie({ key: 'guesttoken', value: data.user.token });
+					loggedUser.set(data.user);
+					data.users[data.user.id] = data.user;
+					onlineUsers.update(users => users.map(u => u.id === 'undefined' ? data.user : u));
+					await Preferences.set({
+						key: 'guesttoken',
+						value: data.user.token
+					})
+					allowSocket.set(true);
 				}else{
 					await Preferences.set({
 						key: 'guesttoken',

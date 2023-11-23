@@ -61,13 +61,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	while(true){
 		if(locals.usertoken === undefined || locals.usertoken === ''){
-			if(event.request.headers.get('user-agent') === 'AnonChatMobile'){
-				console.log("AnonChatMobile found!", JSON.stringify(event.request.headers, null, 1))
-				if(event.cookies.get('newuser') !== 'true'){
-					console.log("AnonChatMobile newuser")
-					break;
-				}
-			}
+			if(event.request.headers.get('user-agent') === 'AnonChatMobile')
+				break;
 			
 			locals.usertoken = randHex();
 			event.cookies.set('guesttoken', locals.usertoken);

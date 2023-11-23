@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
+	import { sleep, allowSocket } from '$lib/client/chat';
 
     // Props
     export let src : string | undefined
@@ -28,7 +29,7 @@
 	let markdestroy = false; // @hmr:keep
     let retrying = false; // @hmr:keep
 
-	function tryGet(){
+	async function tryGet(){
 		//curreader = curreader ?? usc[src ?? '']
         if(src === undefined) return
 		if((curreader && !curreader.closed ) || retrying) return;
@@ -36,8 +37,8 @@
 
 		markdestroy = false
 
-		if(document.cookie.indexOf('guesttoken') === -1)
-			return;
+		while(!$allowSocket)
+			await sleep(500);
 
 		// Delete duplicated socket
 		// if(usc[src ?? '']) usc[src ?? '']()
