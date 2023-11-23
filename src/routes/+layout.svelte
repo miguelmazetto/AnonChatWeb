@@ -36,7 +36,7 @@
 					</span>
 				</button>
 
-				<strong class="text-xl">Chat Distribuido</strong>
+				<strong class="text-xl">AnonChat</strong>
 			</svelte:fragment>
 			<svelte:fragment slot="trail">
 				<a
