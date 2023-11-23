@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { onNavigate } from '$app/navigation';
-	import { sleep, allowSocket } from '$lib/client/chat';
+	import { sleep } from '$lib/client/chat';
 
     // Props
     export let src : string | undefined
@@ -37,8 +36,8 @@
 
 		markdestroy = false
 
-		while(!$allowSocket)
-			await sleep(500);
+		while(document.cookie.indexOf('guesttoken') === -1)
+			await sleep(100);
 
 		// Delete duplicated socket
 		// if(usc[src ?? '']) usc[src ?? '']()

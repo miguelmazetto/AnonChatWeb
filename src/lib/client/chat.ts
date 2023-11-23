@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { onMount } from "svelte";
 import { writable } from "svelte/store";
 
 /**
@@ -56,5 +57,3 @@ export type PublicUser = {
 export let onlineUsers = writable<PublicUser[]>();
 
 export let loggedUser = writable<PublicUser>();
-
-export let allowSocket = writable(!Capacitor.isNativePlatform());

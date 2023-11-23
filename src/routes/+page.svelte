@@ -5,7 +5,7 @@
 	import FixDestroy from '$lib/components/fixdestroy.svelte';
 	import type { PageData } from './$types';
 	import type { addmsg_cast } from './+page.server';
-	import { allowSocket, loggedUser, onlineUsers, postmessage } from '$lib/client/chat';
+	import { loggedUser, onlineUsers, postmessage } from '$lib/client/chat';
 	import Navigation from '$lib/components/navigation.svelte';
 	
 	import { Capacitor, CapacitorCookies } from '@capacitor/core'
@@ -46,7 +46,6 @@
 						key: 'guesttoken',
 						value: data.user.token
 					})
-					allowSocket.set(true);
 				}else{
 					await Preferences.set({
 						key: 'guesttoken',
