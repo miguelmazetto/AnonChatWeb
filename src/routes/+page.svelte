@@ -196,6 +196,8 @@
 					}
 					return a;
 				})
+				if(msg.data.id === $loggedUser.id)
+					loggedUser.update(u => (u.name = msg.data.name, u))
 				msgBuf.forEach(m =>
 					m.sender.id === msg.data.id ? m.sender.name = msg.data.name : 0)
 				msgBuf = msgBuf;
