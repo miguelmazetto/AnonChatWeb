@@ -38,8 +38,10 @@
 		markdestroy = false
 		retrying = true
 
-		while(document.cookie.indexOf('guesttoken') === -1)
+		while(document.cookie.indexOf('guesttoken') === -1 && !markdestroy)
 			await sleep(100);
+
+		if(markdestroy) return;
 
 		// Delete duplicated socket
 		// if(usc[src ?? '']) usc[src ?? '']()
