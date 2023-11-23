@@ -20,7 +20,7 @@
 		},
 	};
 
-    loggedUser.subscribe(v => {currentUser = changeNameModal.value = v});
+    loggedUser.subscribe(v => {currentUser = v; changeNameModal.value = v.name});
 
 </script>
 
