@@ -61,6 +61,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	while(true){
 		if(locals.usertoken === undefined || locals.usertoken === ''){
+			if(event.request.headers.get('user-agent') === 'AnonChatMobile'){
+				if(event.cookies.get('newuser') !== 'true'){
+					break;
+				}
+			}
+			
 			locals.usertoken = randHex();
 			event.cookies.set('guesttoken', locals.usertoken);
 			locals.user = await prisma.user.create({

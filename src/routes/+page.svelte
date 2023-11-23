@@ -8,6 +8,35 @@
 	import { loggedUser, onlineUsers, postmessage, type PublicUser } from '$lib/client/chat';
 	import Navigation from '$lib/components/navigation.svelte';
 	
+	import { Capacitor, CapacitorCookies } from '@capacitor/core'
+	import { Preferences } from '@capacitor/preferences';
+
+	if(Capacitor.isNativePlatform()){
+		onMount(async () => {
+			const saved = (await Preferences.get({ key: 'guesttoken' })).value
+			if(saved){
+				await CapacitorCookies.setCookie({
+					key: 'guesttoken',
+					value: saved
+				})
+				location.reload();
+			}else{
+				if(document.cookie.indexOf('guesttoken') === -1){
+					await CapacitorCookies.setCookie({
+						key: 'newuser',
+						value: 'true'
+					})
+					location.reload();
+				}else{
+					await Preferences.set({
+						key: 'guesttoken',
+						value: (await CapacitorCookies.getCookies()).guesttoken
+					})
+				}
+			}
+		})
+	}
+
 	/**
 	 * Dados embutidos pelo load (Server-Side Rendering)
 	 */

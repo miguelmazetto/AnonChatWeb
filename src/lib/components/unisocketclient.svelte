@@ -36,6 +36,9 @@
 
 		markdestroy = false
 
+		if(document.cookie.indexOf('guesttoken') === -1)
+			return;
+
 		// Delete duplicated socket
 		// if(usc[src ?? '']) usc[src ?? '']()
 		// usc[src ?? ''] = doDestroy;
