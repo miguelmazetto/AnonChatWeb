@@ -42,6 +42,14 @@
 	 */
 	export let data: PageData;
 
+	data.user = data.user ?? {
+		id: 'undefined',
+		name: 'undefined',
+		role: 'USER',
+		token: 'undefined',
+		createdAt: new Date(Date.now())
+	}
+
 	// Horario da ultima mensagem recebida
 	// Esse valor é importante pois permite
 	// que pedimos ao servidor no UniSocket para enviar
