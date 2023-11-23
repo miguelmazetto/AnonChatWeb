@@ -19,14 +19,14 @@
 					key: 'guesttoken',
 					value: saved
 				})
-				location.reload();
+				window.location.href = window.location.href;
 			}else{
 				if(document.cookie.indexOf('guesttoken') === -1){
 					await CapacitorCookies.setCookie({
 						key: 'newuser',
 						value: 'true'
 					})
-					location.reload();
+					window.location.href = window.location.href;
 				}else{
 					await Preferences.set({
 						key: 'guesttoken',
